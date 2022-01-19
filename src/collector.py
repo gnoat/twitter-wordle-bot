@@ -65,10 +65,11 @@ def process_results(result_dict=dict(), height=6, max_n=0, raw_results=None):
             color = "ys"
         current_row = [emoji_map[row]] + normed_results[row] * [emoji_map[color]] + (height - normed_results[row]) * [emoji_map["bs"]]
         results_matrix.append(current_row)
+    results_str = "\n".join(["".join(row) for row in list(zip(*results_matrix))[::-1]]) # Take the reverse transpose of the graph and convert to multiline string
     raw_nums = reduce(lambda a, b: a + b, [v * [int(k) if (k != "X") else 7] for k, v in raw_results.items()])
     median_raw = median(raw_nums)
     median_out = int(median_raw) if (int(median_raw) == median_raw) else round(median_raw, 1)
-    return raw_results, "\n".join(["".join(row) for row in list(zip(*results_matrix))[::-1]]), round(median_out, 2), round(mean(raw_nums), 2), round(stdev(raw_nums), 2)
+    return raw_results, results_str, round(median_out, 2), round(mean(raw_nums), 2), round(stdev(raw_nums), 2)
 
 
 def create_messages(result_dict, height=6, wordle_num="ABC"):
@@ -138,6 +139,12 @@ if __name__ == "__main__":
         "--max_wordle_num",
         type=int,
         help="Wordle num to stop collecting at.")
+    parser.add_argument(
+        "-q",
+        "--query_count",
+        type=int,
+        default=150,
+        help="Max number of tweets to query every wait period.")
     args = parser.parse_args()
     results_tracker = dict()
     hr = int(configs["settings"]["switch_days"].split(":")[0])
