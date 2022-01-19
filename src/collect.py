@@ -59,7 +59,7 @@ def process_results(result_dict, height=6, max_n=0):
     raw_nums = reduce(lambda a, b: a + b, [v * [int(k) if (k != "X") else 7] for k, v in raw_results.items()])
     median_raw = median(raw_nums)
     median_out = int(median_raw) if (int(median_raw) == median_raw) else median_raw
-    return raw_results, "\n".join(["".join(row) for row in list(zip(*results_matrix))[::-1]]), median_out, mean(raw_nums), stdev(raw_nums)
+    return raw_results, "\n".join(["".join(row) for row in list(zip(*results_matrix))[::-1]]), round(median_out, 2), round(mean(raw_nums), 2), round(stdev(raw_nums), 2)
 
 
 def create_messages(result_dict, height=6, wordle_num="ABC"):
@@ -112,9 +112,10 @@ if __name__ == "__main__":
     results_tracker = dict()
 
     while(datetime.now().hour != int(configs["settings"]["start"].split(":")[0])):
+        print("Current time:", datetime.now().hour)
         try:
             updated_tracker = update_results(api, wordle_num=args.num, result_dict=results_tracker, count=150)
-            top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height)
+            top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height, wordle_num=args.num)
         except Exception as e:
             print("Exception:", e)
             continue
@@ -122,9 +123,11 @@ if __name__ == "__main__":
         print(top_msg)
         print(additional_msg)
         if args.continuous:
+            print("Sending Tweets!")
             initial_response = api.update_status(status=top_msg)
             api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
         time.sleep(60 * args.wait)
 
+    print("Sending Tweets!")
     initial_response = api.update_status(status=top_msg)
     api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
