@@ -38,7 +38,7 @@ def pull_results(api, wordle_num=None, result_dict=dict(), count=450):
         query = "Wordle AND 6"
     else:
         query = f"Wordle AND {wordle_num} AND 6"
-    wordle_str = f"Wordle {wordle_num} (\d*X*)/6"
+    wordle_str = f"Wordle {wordle_num} ([1-6]*X*)/6"
     for tweet in api.search_tweets(q=query, result_type="recent", count=count):
         scores = re.findall(wordle_str, tweet.text)
         if len(scores) > 0:
