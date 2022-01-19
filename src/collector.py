@@ -5,12 +5,14 @@ from collections import Counter
 from statistics import median, mean, stdev
 from functools import reduce
 from argparse import ArgumentParser
-from datetime import datetime
+from datetime import time
 import time
 from configparser import ConfigParser
 import pathlib
+import datetime
 
 
+# Easy way to map emojis to create graph
 emoji_map = {
     "1": "1️⃣",
     "2": "2️⃣",
@@ -27,7 +29,10 @@ emoji_map = {
 }
 
 
-def update_results(api, wordle_num=None, result_dict=dict(), count=450):
+def pull_results(api, wordle_num=None, result_dict=dict(), count=450):
+    '''
+    Runs a Twitter query, filters out tweets that don't contain a wordle, and adds the raw results to result_dict
+    '''
     if (wordle_num is None) or (wordle_num == ""):
         wordle_num = "[0-9]+"
         query = "Wordle AND 6"
@@ -41,8 +46,12 @@ def update_results(api, wordle_num=None, result_dict=dict(), count=450):
     return result_dict
 
 
-def process_results(result_dict, height=6, max_n=0):
-    raw_results = Counter(result_dict.values())
+def process_results(result_dict=dict(), height=6, max_n=0, raw_results=None):
+    '''
+    Take raw results which map user -> wordle score, aggregate scores, generate graph, and return graph and stats
+    '''
+    if raw_results is None:
+        raw_results = Counter(result_dict.values())
     max_score = max(raw_results.values())
     max_score_key = max(raw_results, key=raw_results.get)
     results_matrix = list()
@@ -58,16 +67,33 @@ def process_results(result_dict, height=6, max_n=0):
         results_matrix.append(current_row)
     raw_nums = reduce(lambda a, b: a + b, [v * [int(k) if (k != "X") else 7] for k, v in raw_results.items()])
     median_raw = median(raw_nums)
-    median_out = int(median_raw) if (int(median_raw) == median_raw) else median_raw
+    median_out = int(median_raw) if (int(median_raw) == median_raw) else round(median_raw, 1)
     return raw_results, "\n".join(["".join(row) for row in list(zip(*results_matrix))[::-1]]), round(median_out, 2), round(mean(raw_nums), 2), round(stdev(raw_nums), 2)
 
 
 def create_messages(result_dict, height=6, wordle_num="ABC"):
+    '''
+    Take processed results and generate messages to Tweet
+    '''
     rslts, img, med, avg, std = process_results(result_dict, height)
     top_msg = f"Wordle {wordle_num} {med}/6\n\n{img}\n\n*Sampled from {len(result_dict)} tweets"
     count_msg = "\n".join([f"{k} -> {rslts[k]}" for k in ["1", "2", "3", "4", "5", "6", "X"]])
     additional_msg = f"Mean: {avg}\nMedian: {med}\nStd: {std}\n\nRaw counts:\n{count_msg}"
     return top_msg, additional_msg
+
+
+def infer_wordle_num(api):
+    '''
+    If wordle number isn't specified, infer it from a sample of the most recent tweets
+    '''
+    query = f"Wordle AND 6"
+    wordle_str = r"Wordle ([0-9]+) \d*X*/6"
+    all_wordle_nums = list()
+    for tweet in api.search_tweets(q=query, result_type="recent", count=100):
+        scores = re.findall(wordle_str, tweet.text)
+        if (len(scores) > 0 and scores[0].isdigit()):
+            all_wordle_nums.append(int(scores[0]))
+    return max(all_wordle_nums)
 
 
 if __name__ == "__main__":
@@ -85,15 +111,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "-n",
         "--num",
-        type=str,
-        default="",
+        type=int,
         help="Wordle puzzle number to score"
     )
     parser.add_argument(
         "-y",
         "--y_height",
         type=int,
-        default=7,
+        default=8,
         help="Height of graph"
     )
     parser.add_argument(
@@ -108,26 +133,43 @@ if __name__ == "__main__":
         "--continuous",
         action="store_true",
         help="Update every iteration")
+    parser.add_argument(
+        "-m",
+        "--max_wordle_num",
+        type=int,
+        help="Wordle num to stop collecting at.")
     args = parser.parse_args()
     results_tracker = dict()
+    hr = int(configs["settings"]["switch_days"].split(":")[0])
+    mins = int(configs["settings"]["switch_days"].split(":")[1])
+    switching_time = datetime.datetime.combine(datetime.date.today(), datetime.time(hr, mins))
+    wordle_num = infer_wordle_num(api) if (args.num is None) else args.num
 
-    while(datetime.now().hour != int(configs["settings"]["start"].split(":")[0])):
-        print("Current time:", datetime.now().hour)
+    while(True if (args.max_wordle_num is None) else (wordle_num > args.max_wordle_num)): # Loop until max_wordle_num is reached
+        while(datetime.datetime.now() < switching_time): # Loop until switch time from configs has passed
+            print("Current time:", datetime.datetime.now().time())
+            try:
+                updated_tracker = pull_results(api, wordle_num=wordle_num, result_dict=results_tracker, count=150) # pull and update results
+                top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height, wordle_num=wordle_num) # create messages from results
+                print(top_msg)
+                print(additional_msg)
+                results_tracker = updated_tracker.copy() # update results tracker to include new results
+            except Exception as e:
+                print("Exception:", e)
+                continue
+            if args.continuous:
+                print("Sending Tweets!")
+                initial_response = api.update_status(status=top_msg)
+                api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
+            time.sleep(60 * args.wait)
+
         try:
-            updated_tracker = update_results(api, wordle_num=args.num, result_dict=results_tracker, count=150)
-            top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height, wordle_num=args.num)
-        except Exception as e:
-            print("Exception:", e)
-            continue
-        results_tracker = updated_tracker.copy()
-        print(top_msg)
-        print(additional_msg)
-        if args.continuous:
             print("Sending Tweets!")
             initial_response = api.update_status(status=top_msg)
             api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
-        time.sleep(60 * args.wait)
+        except Exception as e:
+                print("Exception:", e)
 
-    print("Sending Tweets!")
-    initial_response = api.update_status(status=top_msg)
-    api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
+        # Once switch time has passed, increment wordle_num and switch time before restarting tweet collection
+        wordle_num += 1
+        switching_time += datetime.timedelta(days=1)

@@ -1,2 +1,3 @@
-tweepy-4.4.0
-schedule-1.1.0
+tweepy
+schedule
+pytest
