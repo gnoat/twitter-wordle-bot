@@ -151,19 +151,21 @@ if __name__ == "__main__":
     mins = int(configs["settings"]["switch_days"].split(":")[1])
     switching_time = datetime.datetime.combine(datetime.date.today(), datetime.time(hr, mins))
     wordle_num = infer_wordle_num(api) if (args.num is None) else args.num
+    if switching_time < datetime.datetime.now():
+        switching_time += datetime.timedelta(days=1)
     print("Starting bot...")
 
     while(True if (args.max_wordle_num is None) else (wordle_num > args.max_wordle_num)): # Loop until max_wordle_num is reached
         while(datetime.datetime.now() < switching_time): # Loop until switch time from configs has passed
-            print("Current time:", datetime.datetime.now().time())
-            print("Ending time:", switching_time.time())
+            print("Current time:", datetime.datetime.now())
+            print("Ending time:", switching_time)
             updated_tracker = pull_results(api, wordle_num=wordle_num, result_dict=results_tracker, count=150) # pull and update results
             top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height, wordle_num=wordle_num) # create messages from results
             print(top_msg)
             print(additional_msg)
             results_tracker = updated_tracker.copy() # update results tracker to include new results
             if args.continuous:
-                print("Sending Tweets!")
+                print("Sending Tweets Continuous!")
                 initial_response = api.update_status(status=top_msg)
                 api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
             time.sleep(60 * args.wait)
