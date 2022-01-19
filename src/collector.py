@@ -29,7 +29,21 @@ emoji_map = {
 }
 
 
-def pull_results(api, wordle_num=None, result_dict=dict(), count=450):
+def twitter_query(api, query, count, configs):
+    '''
+    Runs a Twitter query and returns the raw results
+    '''
+    for _ in range(int(configs["settings"]["max_retries"])):
+        try:
+            tweets = api.search_tweets(q=query, result_type="recent", count=count)
+            return tweets
+        except tweepy.errors.TweepyException as e:
+            print(f"Query Error: {e}")
+            print(f"Waiting:", configs["settings"]["error_wait"], "mins...")
+            time.sleep(int(configs["settings"]["error_wait"]) * 60)
+
+
+def pull_results(api, configs, wordle_num=None, result_dict=dict(), count=450):
     '''
     Runs a Twitter query, filters out tweets that don't contain a wordle, and adds the raw results to result_dict
     '''
@@ -39,7 +53,8 @@ def pull_results(api, wordle_num=None, result_dict=dict(), count=450):
     else:
         query = f"Wordle AND {wordle_num} AND 6"
     wordle_str = f"Wordle {wordle_num} ([1-6]*X*)/6"
-    for tweet in api.search_tweets(q=query, result_type="recent", count=count):
+    tweets = twitter_query(api, query, count, configs)
+    for tweet in tweets:
         scores = re.findall(wordle_str, tweet.text)
         if len(scores) > 0:
             result_dict[str(tweet.user.name)] = scores[0]
@@ -159,7 +174,7 @@ if __name__ == "__main__":
         while(datetime.datetime.now() < switching_time): # Loop until switch time from configs has passed
             print("Current time:", datetime.datetime.now())
             print("Ending time:", switching_time)
-            updated_tracker = pull_results(api, wordle_num=wordle_num, result_dict=results_tracker, count=150) # pull and update results
+            updated_tracker = pull_results(api, configs, wordle_num=wordle_num, result_dict=results_tracker, count=150) # pull and update results
             top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height, wordle_num=wordle_num) # create messages from results
             print(top_msg)
             print(additional_msg)
