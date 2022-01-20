@@ -1,8 +1,11 @@
+# Project specific
+working.ipynb
+src/cache.json
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
-working.ipynb
 
 # C extensions
 *.so
