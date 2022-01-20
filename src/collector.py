@@ -39,8 +39,8 @@ def twitter_query(api, query, count, configs):
             tweets = api.search_tweets(q=query, result_type="recent", count=count)
             return tweets
         except tweepy.errors.TweepyException as e:
-            print(f"Query Error: {e}")
-            print(f"Waiting:", configs["settings"]["error_wait"], "mins...")
+            print(f"~~~ Query Error: {e}")
+            print(f"~~~ Waiting:", configs["settings"]["error_wait"], "mins...")
             time.sleep(int(configs["settings"]["error_wait"]) * 60)
 
 
@@ -79,7 +79,7 @@ def process_results(result_dict=dict(), height=6, max_n=0, raw_results=None):
             color = "rs"
         else:
             color = "ys"
-        current_row = [emoji_map[row]] + normed_results[row] * [emoji_map[color]] + (height - normed_results[row]) * [emoji_map["ws"]]
+        current_row = [emoji_map[row]] + normed_results[row] * [emoji_map[color]] + (height - normed_results[row]) * [emoji_map["bs"]]
         results_matrix.append(current_row)
     results_str = "\n".join(["".join(row) for row in list(zip(*results_matrix))[::-1]]) # Take the reverse transpose of the graph and convert to multiline string
     raw_nums = reduce(lambda a, b: a + b, [v * [int(k) if (k != "X") else 7] for k, v in raw_results.items()])
@@ -164,8 +164,9 @@ if __name__ == "__main__":
     configs.read(pathlib.Path(__file__).parent / "configs.properties")
 
     # Authenticate to Twitter
-    auth = tweepy.OAuthHandler(os.environ["TWT_API_KEY"], os.environ["TWT_API_SECRET"])
-    auth.set_access_token(os.environ["TWT_TOKEN_KEY"], os.environ["TWT_TOKEN_SECRET"])
+    ext_vars = lambda s: os.environ[configs['external'][s]]
+    auth = tweepy.OAuthHandler(ext_vars("TWT_API_KEY"), ext_vars("TWT_API_SECRET"))
+    auth.set_access_token(ext_vars("TWT_TOKEN_KEY"), ext_vars("TWT_TOKEN_SECRET"))
     api = tweepy.API(auth)
 
     # Parse arguments
@@ -219,6 +220,8 @@ if __name__ == "__main__":
         help="Time to switch to next Wordle puzzle num in format HH:MM.  Defaults to time in configuration if nothing is set.")
     args = parser.parse_args()
 
+    print("~ Environment setup...")
+
     # Some initial environment setup
     results_tracker = dict()
     wordle_num = infer_wordle_num(api) if (args.num is None) else args.num
@@ -233,6 +236,7 @@ if __name__ == "__main__":
     print("~ Starting bot...")
     print("~ Wordle num:", wordle_num)
 
+    # Main loop
     while(True if (args.max_wordle_num is None) else (wordle_num > args.max_wordle_num)): # Loop until max_wordle_num is reached
         while(datetime.datetime.now() < switching_time): # Loop until switch time from configs has passed
 
@@ -274,4 +278,4 @@ if __name__ == "__main__":
 
         except Exception as e:
 
-                print("Exception:", e)
+                print("Exception Sending Tweet:", e)
