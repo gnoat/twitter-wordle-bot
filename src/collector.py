@@ -58,7 +58,7 @@ def pull_results(api, configs, wordle_num=None, result_dict=dict(), count=450):
     for tweet in tweets:
         scores = re.findall(wordle_str, tweet.text)
         if len(scores) > 0:
-            result_dict[str(tweet.user.name)] = scores[0]
+            result_dict[str(tweet.user.id)] = scores[0]
     return result_dict
 
 
@@ -110,7 +110,9 @@ def infer_wordle_num(api):
         scores = re.findall(wordle_str, tweet.text)
         if (len(scores) > 0 and scores[0].isdigit()):
             all_wordle_nums.append(int(scores[0]))
-    return max(all_wordle_nums)
+    inferred = max(all_wordle_nums)
+    print("~~~ Inferred Wordle number:", inferred)
+    return inferred
 
 
 def sort_times(hr_mins_str):
@@ -224,7 +226,7 @@ if __name__ == "__main__":
     update_time = sort_times(args.update_time)
     if args.cache:
         cache_wordle_num, cache_results = read_cache(configs)
-        if (cache_wordle_num == args.num) or (args.num is None):
+        if (cache_wordle_num is not None) and ((cache_wordle_num == args.num) or (args.num is None)):
             wordle_num = cache_wordle_num
             results_tracker = cache_results
     
@@ -236,6 +238,7 @@ if __name__ == "__main__":
 
             print("~~ Current time:", datetime.datetime.now())
             print("~~ Ending time:", switching_time)
+            print("~~ Update time:", update_time)
 
             updated_tracker = pull_results(api, configs, wordle_num=wordle_num, result_dict=results_tracker, count=150) # pull and update results
             top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height, wordle_num=wordle_num) # create messages from results
