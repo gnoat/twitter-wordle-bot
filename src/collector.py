@@ -137,8 +137,8 @@ def save_cache(result_dict, configs, to_cache=True, wordle_num=""):
                 "wordle_num": wordle_num,
                 "result_dict": result_dict
                 }))
-        print("Cached results for num", wordle_num)
-        print("Cache saved to", cache_file)
+        print("~~~ Cached results for num", wordle_num)
+        print("~~~ Cache saved to", cache_file)
     return result_dict.copy()
 
 
@@ -148,7 +148,7 @@ def read_cache(configs):
     '''
     cache_file = pathlib.Path(__file__).parent / configs["settings"]["cache_file"]
     if cache_file.is_file():
-        print("Reading cache from", cache_file)
+        print("~~~ Reading cache from", cache_file)
         with open(cache_file, "r") as f:
             cache = json.loads(f.read())
         return int(cache["wordle_num"]) if (cache["wordle_num"] is not None) else None, cache["result_dict"]
@@ -228,14 +228,14 @@ if __name__ == "__main__":
             wordle_num = cache_wordle_num
             results_tracker = cache_results
     
-    print("Starting bot...")
-    print("Wordle num:", wordle_num)
+    print("~ Starting bot...")
+    print("~ Wordle num:", wordle_num)
 
     while(True if (args.max_wordle_num is None) else (wordle_num > args.max_wordle_num)): # Loop until max_wordle_num is reached
         while(datetime.datetime.now() < switching_time): # Loop until switch time from configs has passed
 
-            print("Current time:", datetime.datetime.now())
-            print("Ending time:", switching_time)
+            print("~~ Current time:", datetime.datetime.now())
+            print("~~ Ending time:", switching_time)
 
             updated_tracker = pull_results(api, configs, wordle_num=wordle_num, result_dict=results_tracker, count=150) # pull and update results
             top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height, wordle_num=wordle_num) # create messages from results
@@ -245,7 +245,7 @@ if __name__ == "__main__":
             
             if (args.update_time is not None) and (update_time < datetime.datetime.now()): # update time if specified:
 
-                print("Sending Tweet Update!")
+                print("~~ Sending Tweet Update!")
 
                 initial_response = api.update_status(status=top_msg)
                 api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
@@ -255,7 +255,7 @@ if __name__ == "__main__":
 
         try:
 
-            print("Sending Tweets!")
+            print("~~ Sending Tweets!")
 
             initial_response = api.update_status(status=top_msg)
             api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
@@ -265,9 +265,9 @@ if __name__ == "__main__":
             wordle_num += 1
             switching_time += datetime.timedelta(days=1)
 
-            print("Results tracker reset!")
-            print("Wordle num:", wordle_num)
-            print("Switching time:", switching_time)
+            print("~~ Results tracker reset!")
+            print("~~ Wordle num:", wordle_num)
+            print("~~ Switching time:", switching_time)
 
         except Exception as e:
 
