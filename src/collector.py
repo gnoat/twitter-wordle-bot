@@ -62,7 +62,7 @@ def pull_results(api, configs, wordle_num=None, result_dict=dict(), count=450):
     return result_dict
 
 
-def process_results(result_dict=dict(), height=6, max_n=0, raw_results=None):
+def process_results(result_dict=dict(), height=6, max_n=0, raw_results=None, background_color="bs"):
     '''
     Take raw results which map user -> wordle score, aggregate scores, generate graph, and return graph and stats
     '''
@@ -79,7 +79,7 @@ def process_results(result_dict=dict(), height=6, max_n=0, raw_results=None):
             color = "rs"
         else:
             color = "ys"
-        current_row = [emoji_map[row]] + normed_results[row] * [emoji_map[color]] + (height - normed_results[row]) * [emoji_map["bs"]]
+        current_row = [emoji_map[row]] + normed_results[row] * [emoji_map[color]] + (height - normed_results[row]) * [emoji_map[background_color]]
         results_matrix.append(current_row)
     results_str = "\n".join(["".join(row) for row in list(zip(*results_matrix))[::-1]]) # Take the reverse transpose of the graph and convert to multiline string
     raw_nums = reduce(lambda a, b: a + b, [v * [int(k) if (k != "X") else 7] for k, v in raw_results.items()])
@@ -254,7 +254,8 @@ if __name__ == "__main__":
 
                 print("~~ Sending Tweet Update!")
 
-                initial_response = api.update_status(status=top_msg)
+                top_msg, additional_msg = create_messages(updated_tracker, height=args.y_height, wordle_num=wordle_num, background_color="ws") # create messages from results
+                initial_response = api.update_status(status="Half-day stats:\n\n" + top_msg)
                 api.update_status(status=f"{configs['account']['name']}\n" + additional_msg, in_reply_to_status_id=initial_response.id)
                 update_time += datetime.timedelta(days=1)
 
