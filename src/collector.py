@@ -88,11 +88,11 @@ def process_results(result_dict=dict(), height=6, max_n=0, raw_results=None, bac
     return raw_results, results_str, round(median_out, 2), round(mean(raw_nums), 2), round(stdev(raw_nums), 2)
 
 
-def create_messages(result_dict, height=6, wordle_num="ABC"):
+def create_messages(result_dict, height=6, wordle_num="ABC", max_n=0, background_color="bs"):
     '''
     Take processed results and generate messages to Tweet
     '''
-    rslts, img, med, avg, std = process_results(result_dict, height)
+    rslts, img, med, avg, std = process_results(result_dict, height, max_n=max_n, background_color=background_color)
     top_msg = f"Wordle {wordle_num} {med}/6\n\n{img}\n\n*Sampled from {len(result_dict)} tweets"
     count_msg = "\n".join([f"{k} -> {rslts[k]}" for k in ["1", "2", "3", "4", "5", "6", "X"]])
     additional_msg = f"Mean: {avg}\nMedian: {med}\nStd: {std}\n\nRaw counts:\n{count_msg}"
