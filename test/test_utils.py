@@ -1,7 +1,5 @@
 import pytest
-import sys
-import os
-import collector
+import utils
 from collections import Counter
 
 
@@ -14,7 +12,7 @@ def test_process_results(get_results):
 ⬛🟨🟨🟩🟨🟨🟥
 1️⃣2️⃣3️⃣4️⃣5️⃣6️⃣❌"""
 
-    raw_results, graph, med, avg, std = collector.process_results(
+    raw_results, graph, med, avg, std = utils.process_results(
         get_results, background_color="bs"
     )
     assert med == 4
@@ -31,14 +29,14 @@ def test_query_to_message_pipeline(mock_twitter_api):
 Median: 4
 Std: 1.13
 
-Raw counts:
-1 -> 0
-2 -> 5
-3 -> 28
-4 -> 29
-5 -> 25
-6 -> 8
-X -> 2"""
+Distribution:
+1: 0.0%
+2: 5.2%
+3: 28.9%
+4: 29.9%
+5: 25.8%
+6: 8.2%
+X: 2.1%"""
     top_msg_expected = """Wordle 216 4/6
 
 ⬜⬜🟨🟩⬜⬜⬜
@@ -61,10 +59,10 @@ X -> 2"""
             "cache_file": "cache.json",
         }
     }
-    updated_tracker = collector.pull_results(
+    updated_tracker = utils.pull_results(
         api, configs, wordle_num=216, result_dict=dict(), count=150
     )  # pull and update results
-    top_msg, additional_msg = collector.create_messages(
+    top_msg, additional_msg = utils.create_messages(
         updated_tracker, height=7, wordle_num=216, background_color="ws"
     )
     assert top_msg.strip() == top_msg_expected
@@ -73,4 +71,4 @@ X -> 2"""
 
 def test_infer_wordle_num(mock_twitter_api):
     api = mock_twitter_api
-    assert collector.infer_wordle_num(api) == 216
+    assert utils.infer_wordle_num(api) == 216
