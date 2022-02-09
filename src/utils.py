@@ -79,7 +79,7 @@ def process_results(
     max_n: int = 0,
     raw_results: Union[Counter, None] = None,
     background_color: str = "bs",
-) -> Tuple[dict, str, Union[int, float], float, float]:
+) -> Tuple[dict, str, int, float, float]:
     """
     Take raw results which map user -> wordle score, aggregate scores, generate graph, and return graph and stats
     """
@@ -112,14 +112,10 @@ def process_results(
         lambda a, b: a + b,
         [v * [int(k) if (k != "X") else 7] for k, v in raw_results.items()],
     )
-    median_raw = median(raw_nums)
-    median_out = (
-        int(median_raw) if (int(median_raw) == median_raw) else round(median_raw, 1)
-    )
     return (
         raw_results,
         results_str,
-        median_out,
+        round(median(raw_nums), 2),
         round(mean(raw_nums), 2),
         round(stdev(raw_nums), 2),
     )
@@ -138,7 +134,7 @@ def create_messages(
     rslts, img, med, avg, std = process_results(
         result_dict, height, max_n=max_n, background_color=background_color
     )
-    top_msg = f"Wordle {wordle_num} {med}/6\n\n{img}\n\n*Sampled from {len(result_dict)} tweets"
+    top_msg = f"Wordle {wordle_num} {int(med)}/6\n\n{img}\n\n*Sampled from {len(result_dict)} tweets"
     sample_count = sum(rslts.values())
     count_msg = "\n".join(
         [f"{k}: {round(100 * rslts[k] / sample_count, 1)}%" for k in ["1", "2", "3", "4", "5", "6", "X"]]

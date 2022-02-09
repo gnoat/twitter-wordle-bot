@@ -2,3 +2,4 @@ tweepy
 schedule
 pytest
 yapf
+pytype
