@@ -44,8 +44,8 @@ def twitter_query(
             tweets = api.search_tweets(q=query, result_type="recent", count=count)
             return tweets
         except tweepy.errors.TweepyException as e:
-            print(f"~~~ Query Error: {e}")
-            print(f"~~~ Waiting:", configs["settings"]["error_wait"], "mins...")
+            print(f" Query Error: {e}")
+            print(f" Waiting:", configs["settings"]["error_wait"], "mins...")
             time.sleep(int(configs["settings"]["error_wait"]) * 60)
 
 
@@ -202,8 +202,8 @@ def save_cache(
     if to_cache:
         with open(cache_file, "w") as f:
             f.write(json.dumps({"wordle_num": wordle_num, "result_dict": result_dict}))
-        print("~~~ Cached results for num", wordle_num)
-        print("~~~ Cache saved to", cache_file)
+        print("[info] Cached results for num", wordle_num)
+        print("[info] Cache saved to", cache_file)
     return result_dict.copy()
 
 
@@ -213,7 +213,7 @@ def read_cache(configs: ConfigParser) -> Tuple[Union[int, str, None], dict]:
     """
     cache_file = pathlib.Path(__file__).parent / configs["settings"]["cache_file"]
     if cache_file.is_file():
-        print("~~~ Reading cache from", cache_file)
+        print("[info] Reading cache from", cache_file)
         with open(cache_file, "r") as f:
             cache = json.loads(f.read())
         return (

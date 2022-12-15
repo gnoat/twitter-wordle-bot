@@ -18,10 +18,10 @@ from typing import Union
 
 def main(api: tweepy.API, configs: ConfigParser, args: Namespace):
     # Some initial environment setup
-    print("~ Environment setup...")
+    print("[info] Environment setup...")
     results_tracker = dict()
     wordle_num = infer_wordle_num(api) if (args.num is None) else args.num
-    print("~~~ Inferred Wordle number:", wordle_num)
+    print("[info] Inferred Wordle number:", wordle_num)
     if args.relative_time:
         switching_time, switch_delta = relative_times(args.switch)
         update_time, update_delta = relative_times(args.update_time)
@@ -35,8 +35,8 @@ def main(api: tweepy.API, configs: ConfigParser, args: Namespace):
         ):
             wordle_num = cache_wordle_num
             results_tracker = cache_results
-    print("~ Starting bot...")
-    print("~ Wordle num:", wordle_num)
+    print("[info] Starting bot...")
+    print("[info] Wordle num:", wordle_num)
 
     # Main loop
     while (
@@ -46,9 +46,9 @@ def main(api: tweepy.API, configs: ConfigParser, args: Namespace):
             datetime.datetime.now() < switching_time
         ):  # Loop until switch time from configs has passed
 
-            print("~~ Current time:", datetime.datetime.now())
-            print("~~ Ending time:", switching_time)
-            print("~~ Update time:", update_time)
+            print("[info] Current time:", datetime.datetime.now())
+            print("[info] Ending time:", switching_time)
+            print("[info] Update time:", update_time)
 
             updated_tracker = pull_results(
                 api,
@@ -70,7 +70,7 @@ def main(api: tweepy.API, configs: ConfigParser, args: Namespace):
                 update_time < datetime.datetime.now()
             ):  # update time if specified
 
-                print("~~ Sending Tweet Update!")
+                print("[info] Sending Tweet Update!")
 
                 top_msg, additional_msg = create_messages(
                     updated_tracker,
@@ -94,7 +94,7 @@ def main(api: tweepy.API, configs: ConfigParser, args: Namespace):
 
         try:
 
-            print("~~ Sending Tweets!")
+            print("[info] Sending Tweets!")
 
             initial_response = api.update_status(status=top_msg)
             api.update_status(
@@ -110,10 +110,10 @@ def main(api: tweepy.API, configs: ConfigParser, args: Namespace):
             else:
                 switching_time += datetime.timedelta(days=1)
 
-            print("~~ Results tracker reset!")
-            print("~~ Wordle num:", wordle_num)
-            print("~~ Switching time:", switching_time)
+            print("[info] Results tracker reset!")
+            print("[info] Wordle num:", wordle_num)
+            print("[info] Switching time:", switching_time)
 
         except Exception as e:
 
-            print("Exception Sending Tweet:", e)
+            print("[error] Exception Sending Tweet:", e)
